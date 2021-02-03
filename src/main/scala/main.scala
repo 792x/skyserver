@@ -156,6 +156,7 @@ object Main {
         println("Top 10 frequent subtrees")
         println(subTreeCount.toSeq.sortWith(_._2 > _._2).take(10))
         println(subTreeCount.values.toList.sorted(Ordering.Long.reverse).take(5000))
+        println(subTreeCount.values.toList.count(_ == 1))
     }
 
     def getSubTrees(lp: LogicalPlan): Unit = {
