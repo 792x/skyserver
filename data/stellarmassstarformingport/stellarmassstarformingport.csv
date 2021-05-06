@@ -1,1 +1,0 @@
-specObjID,plate,fiberID,mjd,ra,dec,z,zErr,logMass,minLogMass,maxLogMass,medianPDF,PDF16,PDF84,peakPDF,logMass_noMassLoss,minLogMass_noMassLoss,maxLogMass_noMassLoss,medianPDF_noMassLoss,PDF16_noMassLoss,PDF84_noMassLoss,peakPDF_noMassLoss,reducedChi2,age,minAge,maxAge,SFR,minSFR,maxSFR,absMagK,SFH,Metallicity,reddeninglaw,nFilter

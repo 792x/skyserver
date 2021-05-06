@@ -2,3 +2,5 @@
 .bsp
 .DS_Store
 target
+data
+querylogs
