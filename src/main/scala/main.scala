@@ -9,6 +9,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
+import java.io.{BufferedWriter, FileWriter}
+import au.com.bytecode.opencsv.CSVWriter
+
 object Main {
     val sparkSession: SparkSession = SparkSession.builder
         .appName("Taster")
@@ -23,6 +26,7 @@ object Main {
     val DATA_SET: String = "phonelabs" // "skyserver" | "phonelabs" | "actinius"
     val DATA_DIR: String = "/Users/falker/Documents/Projects/skyserver/data/";
     val LOG_DIR: String = DATA_DIR + DATA_SET + "/logs/";
+    val OUTPUT_DIR: String = DATA_DIR + DATA_SET + "/output/";
     val SCHEMA_DIR: String = DATA_DIR + DATA_SET + "/schema/";
     val USE_DATA_SUBSET: Boolean = false;
 
@@ -54,7 +58,10 @@ object Main {
 
         val encodedQueries: Seq[Set[Long]] = encodeQueries(processedQueries)
 
+        writeToCSV(encodedQueries)
+
         println("============FINISHED STATS============")
+        println("Number of queries: " + queries.size)
         println("Total unique partial QEPs: " + subTreeCount.size)
         println("Top 10 frequent partial QEPs:")
         println(subTreeCount.toSeq.sortWith(_._2 > _._2).take(10))
@@ -63,6 +70,7 @@ object Main {
 
         println("Encoded queries: " + processedQueries.length + " out of " + queries.length)
         println("Finished encoding queries: " + processedQueries.length + " out of " + encodedQueries.length)
+
 
 
     }
@@ -138,12 +146,12 @@ object Main {
     def queryWorkloadPhoneLabs(): List[String] = {
         var queries: ListBuffer[String] = ListBuffer();
 
-        var src: Iterator[String] = Source.fromFile(LOG_DIR + "6851422d5cc6909eab3be6588846cbf8fe4e7a90_log.csv").getLines
+        var src: Iterator[String] = Source.fromFile(LOG_DIR + "2747d54967a32fc95945671b930d57c1d5a9ac02_log.csv").getLines
         src.take(1).next
         for (l <- src) {
-            println(l.split(";")(3))
+//            println(l.split(";")(3)) // can cause array out of bounds exception for some queries
             // Filter for first day and first hour only to limit number of queries
-            if (l.contains("2015-03-01 00:") && !l.contains("sqlite_master") && !l.contains("INSERT") && l.contains("SELECT") && !l.contains("DELETE") && !l.contains("REPLACE") && !l.contains("UPSERT") && !l.contains("UPDATE")) {
+            if (l.contains("2015-03-01") && !l.contains("sqlite_master") && !l.contains("INSERT") && l.contains("SELECT") && !l.contains("DELETE") && !l.contains("REPLACE") && !l.contains("UPSERT") && !l.contains("UPDATE")) {
                 // Replace question marks with 0
                 var sql_query: String = l.split(";")(3).replace("?", "0").replace("()", "(0)").replace("?group", "? group");
                 // Remove column specifiers for INSERT INTO queries and add 0 for all columns
@@ -255,4 +263,32 @@ object Main {
         subTrees
     }
 
+
+    def writeToCSV(encodedQueries: Seq[Set[Long]]): Unit = {
+        println("Writing to CSV");
+
+        val size: Int = encodedQueries.length
+        val halfway: Int = (size / 2)
+
+        val outputHistory: BufferedWriter = new BufferedWriter(new FileWriter(OUTPUT_DIR + "output_history.csv"))
+        val csvWriterHistory: CSVWriter = new CSVWriter(outputHistory)
+        csvWriterHistory.writeNext("queryId", "partialQEPId")
+        for (i <- 0 until halfway) {
+            for(partialQEP <- encodedQueries(i)) {
+                csvWriterHistory.writeNext(i.toString, partialQEP.toString)
+            }
+        }
+        outputHistory.close()
+
+
+        val outputFuture: BufferedWriter = new BufferedWriter(new FileWriter(OUTPUT_DIR + "output_future.csv"))
+        val csvWriterFuture: CSVWriter = new CSVWriter(outputFuture)
+        csvWriterFuture.writeNext("queryId", "partialQEPId")
+        for (i <- halfway until size) {
+            for(partialQEP <- encodedQueries(i)) {
+                csvWriterFuture.writeNext(i.toString, partialQEP.toString)
+            }
+        }
+        outputFuture.close()
+    }
 }
